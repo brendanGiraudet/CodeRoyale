@@ -66,7 +66,7 @@ namespace CodeRoyale
             }
         }
 
-        private static bool CanBuild(int touchedSite, List<Building> buildings)
+        public static bool CanBuild(int touchedSite, List<Building> buildings)
         {
             return touchedSite != -1 && !HasBuilt(touchedSite, buildings);
         }

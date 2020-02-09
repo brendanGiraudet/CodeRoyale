@@ -43,5 +43,31 @@ namespace Tests
             // Assert
             Assert.AreEqual(nearestPosition, expectedSite);
         }
+
+        [Test]
+        public void ShouldCheckIfCanBuild()
+        {
+            // Arrange
+            var idOfSiteTouched = 5;
+            var buildings = new List<Building>
+            {
+                new Building
+                {
+                    RelationshipType = RelationshipType.Friendly,
+                    SiteId = 2
+                },
+                new Building
+                {
+                    RelationshipType = RelationshipType.Enemy,
+                    SiteId = 1
+                }
+            };
+
+            // Act
+            var canBuild = CodeRoyale.Player.CanBuild(idOfSiteTouched, buildings);
+            
+            // Assert
+            Assert.IsTrue(canBuild);
+        }
     }
 }
