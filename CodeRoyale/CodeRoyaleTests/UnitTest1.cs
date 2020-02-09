@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using CodeRoyale;
 using NUnit.Framework;
 
-namespace Tests
+namespace CodeRoyaleTests
 {
     public class Tests
     {
