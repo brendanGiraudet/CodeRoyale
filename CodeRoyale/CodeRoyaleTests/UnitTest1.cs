@@ -65,9 +65,26 @@ namespace Tests
 
             // Act
             var canBuild = CodeRoyale.Player.CanBuild(idOfSiteTouched, buildings);
-            
+
             // Assert
             Assert.IsTrue(canBuild);
+        }
+
+        [Test]
+        public void ShouldCheckIfCanTrain()
+        {
+            // Arrange
+            var sumOfGoldInMyPocket = 100;
+            var building = new Building
+            {
+                UnitTypeBuilt = UnitType.Archer
+            };
+
+            // Act
+            var canTrain = building.CanTrain(sumOfGoldInMyPocket);
+
+            // Assert
+            Assert.IsTrue(canTrain);
         }
     }
 }

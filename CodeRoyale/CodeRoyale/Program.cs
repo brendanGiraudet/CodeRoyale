@@ -226,7 +226,7 @@ namespace CodeRoyale
                    $"UnitTypeBuilt : {UnitTypeBuilt}\n\t";
         }
 
-        public bool CanTrain(in int gold)
+        public bool CanTrain(int gold)
         {
             switch (UnitTypeBuilt)
             {
