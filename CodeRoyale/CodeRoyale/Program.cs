@@ -32,17 +32,10 @@ namespace CodeRoyal
                 var enemyUnitPositions = enemyUnits.Select(u => u.Position).ToList();
                 var nearestEnemyUnitPosition = FindTheNearestPosition(myQueen.Position, enemyUnitPositions);
 
-                var emptySites = GetEmptySites(sites, buildings);
-                var emptySitePositions = emptySites.Select(s => s.Position).ToList();
-                var theNearestEmptySitePosition = FindTheNearestPosition(myQueen.Position, emptySitePositions);
-
-                var firstAction = "WAIT";
-                const string secondAction = "TRAIN";
+                var emptySites = GetEmptySites(buildings);
 
                 var myBuildings = buildings.Where(b =>
                     b.RelationshipType.Equals(RelationshipType.Friendly)).ToList();
-
-                var concatenedSiteId = "";
 
                 var touchedBuilding = buildings.Find(b => b.SiteId.Equals(touchedSite));
 
@@ -51,7 +44,7 @@ namespace CodeRoyal
                     var theNearestSite = FindTheNearestSite(myQueen.Position, sites);
                     BuildTowerInThisSite(theNearestSite);
                     var archerBuildings = buildings.Where(b => b.UnitTypeBuilt.Equals(UnitType.Archer)).ToList();
-                    if (archerBuildings.Count().Equals(0))
+                    if (archerBuildings.Count.Equals(0))
                     {
                         NoUnitToTrain();
                         continue;
@@ -61,67 +54,133 @@ namespace CodeRoyal
                     TrainUnitsInThisBuilding(theNearestArcherBuild);
                     continue;
                 }
-
-                if (HasEnoughTower(myBuildings))
+                
+                if (touchedBuilding == null)
                 {
-                    var randomTower = myBuildings.First(b => b.StructureType.Equals(StructureType.Tower));
-                    var siteId = randomTower.SiteId;
-                    firstAction = $"BUILD {siteId} TOWER";
-                }
-                else if (CanBuild(touchedBuilding))
-                {
-                    firstAction = $"BUILD {touchedSite} ";
-                    if (!HasEnoughMine(myBuildings) || touchedBuilding.HasFinishToBuild())
-                    {
-                        firstAction += "MINE";
-                    }
-                    else if (!HasEnoughBarracks(myBuildings))
-                    {
-                        var barrackType = "ARCHER";
-                        if (!myBuildings.Any(b => b.UnitTypeBuilt.Equals(UnitType.Giant)))
-                            barrackType = "GIANT";
-                        else if (!myBuildings.Any(b => b.UnitTypeBuilt.Equals(UnitType.Knight)))
-                            barrackType = "KNIGHT";
-
-                        firstAction += $"BARRACKS-{barrackType}";
-                    }
-                    else
-                    {
-                        firstAction += "TOWER";
-                    }
-                }
-                else if (theNearestEmptySitePosition != null)
-                {
-                    firstAction = $"MOVE {theNearestEmptySitePosition.X} {theNearestEmptySitePosition.Y}";
+                    var theNearestEmptySite = FindTheNearestSite(myQueen.Position, emptySites);
+                    MoveToThisSite(theNearestEmptySite);
+                    TryToTrainUnits(myBuildings, gold);
+                    continue;
                 }
 
-                var needArcher = !myUnits.Any(u => u.UnitType.Equals(UnitType.Archer));
-                if (!needArcher)
+                var mines = myBuildings.Where(b => b.StructureType.Equals(StructureType.Mine)).ToList();
+                if (!FinishToBuildAllMines(mines))
                 {
-                    myBuildings = myBuildings.OrderByDescending(b =>
-                        b.GetTrainPrice()).ToList();
-
-                    foreach (var building in myBuildings.Where(building => building.CanTrain(gold)))
-                    {
-                        concatenedSiteId += $" {building.SiteId}";
-                        gold -= building.GetTrainPrice();
-                    }
+                    BuildMineInThisSite(touchedBuilding.Site);
+                    TryToTrainUnits(myBuildings, gold);
+                    continue;
                 }
-                else
+                
+                if (!touchedBuilding.StructureType.Equals(StructureType.Empty))
                 {
-                    var archerBuildings = myBuildings.Where(b =>
-                        b.UnitTypeBuilt.Equals(UnitType.Archer)).ToList();
-
-                    foreach (var building in archerBuildings.Where(building => building.CanTrain(gold)))
-                    {
-                        concatenedSiteId += $" {building.SiteId}";
-                        gold -= building.GetTrainPrice();
-                    }
+                    var theNearestEmptySite = FindTheNearestSite(myQueen.Position, emptySites);
+                    MoveToThisSite(theNearestEmptySite);
+                    TryToTrainUnits(myBuildings, gold);
+                    continue;
                 }
-
-                Console.WriteLine(firstAction);
-                Console.WriteLine(secondAction + concatenedSiteId);
+                
+                var archerBarracks = myBuildings.Where(b => b.UnitTypeBuilt.Equals(UnitType.Archer)).ToList();
+                if (!FinishToBuildAllArcherBarracks(archerBarracks))
+                {
+                    BuildArcherBarrackInThisSite(touchedBuilding.Site);
+                    TryToTrainUnits(myBuildings, gold);
+                    continue;
+                }
+                
+                var knightBarracks = myBuildings.Where(b => b.UnitTypeBuilt.Equals(UnitType.Knight)).ToList();
+                if (!FinishToBuildAllKnightBarracks(knightBarracks))
+                {
+                    BuildKnightBarrackInThisSite(touchedBuilding.Site);
+                    TryToTrainUnits(myBuildings, gold);
+                    continue;
+                }
+                
+                var giantBarracks = myBuildings.Where(b => b.UnitTypeBuilt.Equals(UnitType.Giant)).ToList();
+                if (!FinishToBuildAllGiantBarracks(giantBarracks))
+                {
+                    BuildGiantBarrackInThisSite(touchedBuilding.Site);
+                    TryToTrainUnits(myBuildings, gold);
+                    continue;
+                }
+                
+                var towers = myBuildings.Where(b => b.StructureType.Equals(StructureType.Tower)).ToList();
+                if (!FinishToBuildAllTowers(towers))
+                {
+                    BuildTowerInThisSite(touchedBuilding.Site);
+                    TryToTrainUnits(myBuildings, gold);
+                    continue;
+                }
+                
+                var theNearestTower = FindTheNearestBuilding(myQueen.Position, towers);
+                BuildTowerInThisSite(theNearestTower.Site); // level up the tower
+                TryToTrainUnits(myBuildings, gold);
             }
+        }
+
+        private static void TryToTrainUnits(List<Building> myBarracks, int gold)
+        {
+            myBarracks = myBarracks.OrderByDescending(b =>
+                b.GetTrainPrice()).ToList();
+            var barracksToTrain = new List<Building>();
+            foreach (var barrack in myBarracks)
+            {
+                if (!barrack.CanTrain(gold)) continue;
+                
+                barracksToTrain.Add(barrack);
+                gold -= barrack.GetTrainPrice();
+            }
+
+            TrainUnitsInBuildings(barracksToTrain);
+        }
+
+        private static bool FinishToBuildAllTowers(List<Building> towers)
+        {
+            return towers.Count > 2;
+        }
+
+        private static void BuildGiantBarrackInThisSite(Site touchedBuildingSite)
+        {
+            Console.WriteLine($"BUILD {touchedBuildingSite.Id} BARRACKS-GIANT");
+        }
+
+        private static bool FinishToBuildAllGiantBarracks(List<Building> giantBarracks)
+        {
+            return giantBarracks.Any();
+        }
+
+        private static void BuildKnightBarrackInThisSite(Site touchedBuildingSite)
+        {
+            Console.WriteLine($"BUILD {touchedBuildingSite.Id} BARRACKS-KNIGHT");
+        }
+
+        private static bool FinishToBuildAllKnightBarracks(List<Building> knightBarracks)
+        {
+            return knightBarracks.Any();
+        }
+
+        private static void BuildArcherBarrackInThisSite(Site touchedBuildingSite)
+        {
+            Console.WriteLine($"BUILD {touchedBuildingSite.Id} BARRACKS-ARCHER");
+        }
+
+        private static bool FinishToBuildAllArcherBarracks(List<Building> archerBarracks)
+        {
+            return archerBarracks.Any();
+        }
+
+        private static void MoveToThisSite(Site theNearestSite)
+        {
+            Console.WriteLine($"MOVE {theNearestSite.Position.X} {theNearestSite.Position.Y}");
+        }
+
+        private static void BuildMineInThisSite(Site touchedBuildingSite)
+        {
+            Console.WriteLine($"BUILD {touchedBuildingSite.Id} MINE");
+        }
+
+        private static bool FinishToBuildAllMines(List<Building> mines)
+        {
+            return mines.Any() && mines.All(mine => mine.HasMaximumProduction());
         }
 
         private static void NoUnitToTrain()
@@ -132,6 +191,11 @@ namespace CodeRoyal
         private static void TrainUnitsInThisBuilding(Building theNearestArcherBuild)
         {
             Console.WriteLine($"TRAIN {theNearestArcherBuild.SiteId}");
+        }
+        private static void TrainUnitsInBuildings(List<Building> buildings)
+        {
+            var concatenatedSiteId = buildings.Aggregate("", (current, building) => current + $" {building.SiteId}");
+            Console.WriteLine($"TRAIN{concatenatedSiteId}");
         }
 
         private static Building FindTheNearestBuilding(Position myQueenPosition, List<Building> archerBuildings)
@@ -155,65 +219,12 @@ namespace CodeRoyal
             Console.WriteLine($"BUILD {theNearestSite.Id} TOWER");
         }
 
-        private static bool HasEnoughMine(List<Building> myBuildings)
-        {
-            var mines = myBuildings.Where(b => b.StructureType.Equals(StructureType.Mine)).ToList();
-            if (!mines.Any()) return false;
-            var hasMaximumProduction = true;
-            foreach (var mine in mines.Where(mine => !mine.HasMaximumProduction()))
-            {
-                hasMaximumProduction = false;
-            }
-
-            Console.Error.WriteLine("max : " + hasMaximumProduction);
-
-            return hasMaximumProduction;
-        }
-
-        private static bool HasEnoughTower(List<Building> myBuildings)
-        {
-            return myBuildings.Count(b => b.StructureType.Equals(StructureType.Tower)) > 2;
-        }
-
-        private static Position GetOpposedPosition(Position myQueenPosition, Position nearestEnemyUnitPosition)
-        {
-            var opposedPosition = nearestEnemyUnitPosition;
-            var distance = GetDistance(myQueenPosition, nearestEnemyUnitPosition);
-            if (myQueenPosition.X < nearestEnemyUnitPosition.X)
-                opposedPosition.X -= distance;
-            else if (myQueenPosition.X > nearestEnemyUnitPosition.X)
-            {
-                opposedPosition.X += distance;
-            }
-
-            if (myQueenPosition.Y < nearestEnemyUnitPosition.Y)
-            {
-                opposedPosition.Y -= distance;
-            }
-            else if (myQueenPosition.Y > nearestEnemyUnitPosition.Y)
-            {
-                opposedPosition.Y += distance;
-            }
-
-            return opposedPosition;
-        }
-
         private static void LinkBuildingsAndSites(List<Building> buildings, List<Site> sites)
         {
             foreach (var building in buildings)
             {
                 building.Site = sites.Find(s => s.Id.Equals(building.SiteId));
             }
-        }
-
-        private static bool IsBeside(Position queenPosition, Position unitPosition)
-        {
-            return GetDistance(queenPosition, unitPosition) < 300;
-        }
-
-        private static bool HasEnoughBarracks(List<Building> myBuildings)
-        {
-            return myBuildings.Count(b => b.StructureType.Equals(StructureType.Barrack)) > 2;
         }
 
         public static bool CanBuild(Building touchedBuilding)
@@ -224,12 +235,11 @@ namespace CodeRoyal
             return (touchedBuilding.StructureType.Equals(StructureType.Empty) || !touchedBuilding.HasFinishToBuild());
         }
 
-        private static List<Site> GetEmptySites(List<Site> sites, List<Building> buildings)
+        private static List<Site> GetEmptySites(List<Building> buildings)
         {
-            var emptyBuildings = buildings.Where(b =>
+            return buildings.Where(b =>
                     b.RelationshipType.Equals(RelationshipType.NoStructure))
-                .Select(b => b.SiteId).ToList();
-            return sites.Where(s => emptyBuildings.Contains(s.Id)).ToList();
+                .Select(b => b.Site).ToList();
         }
 
         private static List<Unit> GetUnits()
@@ -301,7 +311,7 @@ namespace CodeRoyal
             return sites;
         }
 
-        public static Position FindTheNearestPosition(Position currentPosition, List<Position> positions)
+        private static Position FindTheNearestPosition(Position currentPosition, List<Position> positions)
         {
             var nearestPosition = positions.First();
             var nearestDistance = GetDistance(currentPosition, nearestPosition);
