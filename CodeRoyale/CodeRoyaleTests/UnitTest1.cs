@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using CodeRoyale;
+using CodeRoyal;
 using NUnit.Framework;
 
 namespace CodeRoyaleTests
@@ -38,7 +38,7 @@ namespace CodeRoyaleTests
             };
 
             // Act
-            var nearestPosition = CodeRoyale.Player.FindTheNearestSite(currentPosition, sites);
+            var nearestPosition = CodeRoyal.Player.FindTheNearestSite(currentPosition, sites);
 
             // Assert
             Assert.AreEqual(nearestPosition, expectedSite);
@@ -48,23 +48,15 @@ namespace CodeRoyaleTests
         public void ShouldCheckIfCanBuild()
         {
             // Arrange
-            var idOfSiteTouched = 5;
-            var buildings = new List<Building>
+            var emptyBuilding = new Building
             {
-                new Building
-                {
-                    RelationshipType = RelationshipType.Friendly,
-                    SiteId = 2
-                },
-                new Building
-                {
-                    RelationshipType = RelationshipType.Enemy,
-                    SiteId = 1
-                }
+                RelationshipType = RelationshipType.NoStructure,
+                StructureType = StructureType.Empty,
+                SiteId = 5
             };
 
             // Act
-            var canBuild = CodeRoyale.Player.CanBuild(idOfSiteTouched, buildings);
+            var canBuild = Player.CanBuild(emptyBuilding);
 
             // Assert
             Assert.IsTrue(canBuild);

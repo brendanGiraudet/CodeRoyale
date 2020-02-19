@@ -1,13 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CodeRoyale
+namespace CodeRoyal
 {
-    /**
- * Auto-generated code below aims at helping you parse
- * the standard input according to the problem statement.
- **/
     public static class Player
     {
         private static void Main(string[] args)
@@ -20,68 +16,177 @@ namespace CodeRoyale
             {
                 var inputs = Console.ReadLine()?.Split(' ');
                 if (inputs == null) throw new ArgumentNullException();
-                
-                var gold = int.Parse(inputs[0]);
-                
-                var touchedSite = int.Parse(inputs[1]); // -1 if none
-                
-                var buildings = GetBuildings(numSites);
-                
-                var units = GetUnits();
 
-                var myQueen = units.First(u =>
-                    u.UnitType == UnitType.Queen && u.RelationshipType == RelationshipType.Friendly);
+                var gold = int.Parse(inputs[0]);
+
+                var touchedSite = int.Parse(inputs[1]); // -1 if none
+
+                var buildings = GetBuildings(numSites);
+                LinkBuildingsAndSites(buildings, sites);
+
+                var units = GetUnits();
+                var myUnits = units.Where(u => u.RelationshipType.Equals(RelationshipType.Friendly)).ToList();
+                var myQueen = myUnits.First(u => u.UnitType == UnitType.Queen);
+                var enemyUnits = units.Where(u => 
+                    u.RelationshipType.Equals(RelationshipType.Enemy)).ToList();
+                var enemyUnitPositions = enemyUnits.Select(u => u.Position).ToList();
+                var nearestEnemyUnitPosition = FindTheNearestPosition(myQueen.Position, enemyUnitPositions);
 
                 var emptySites = GetEmptySites(sites, buildings);
-                var theNearestEmptySite = FindTheNearestSite(myQueen.Position, emptySites);
+                var emptySitePositions = emptySites.Select(s => s.Position).ToList();
+                var theNearestEmptySitePosition = FindTheNearestPosition(myQueen.Position, emptySitePositions);
 
                 var firstAction = "WAIT";
-                var secondAction = "TRAIN";
+                const string secondAction = "TRAIN";
 
-                if (CanBuild(touchedSite, buildings))
+                var myBuildings = buildings.Where(b => 
+                    b.RelationshipType.Equals(RelationshipType.Friendly)).ToList();
+
+                var concatenedSiteId = "";
+
+                var touchedBuilding = buildings.Find(b => b.SiteId.Equals(touchedSite));
+
+                if (IsBeside(myQueen.Position, nearestEnemyUnitPosition))
                 {
-                    const string barrackType = "ARCHER";
-                    firstAction = $"BUILD {touchedSite} BARRACKS-{barrackType}";
+                    var theNearestSite = FindTheNearestSite(myQueen.Position, sites);
+                    firstAction = $"BUILD {theNearestSite.Id} TOWER";
                 }
-                else if (theNearestEmptySite != null)
+                else if (HasEnoughTower(myBuildings))
                 {
-                    firstAction = $"MOVE {theNearestEmptySite.Position.X} {theNearestEmptySite.Position.Y}";
+                    var randomTower = myBuildings.First(b => b.StructureType.Equals(StructureType.Tower));
+                    var siteId = randomTower.SiteId;
+                    firstAction = $"BUILD {siteId} TOWER";
                 }
-
-                var myBuildings = buildings.Where(b => b.RelationshipType.Equals(RelationshipType.Friendly)).ToList();
-                var siteIdConcatened = "";
-                myBuildings.ForEach(Console.Error.WriteLine);
-
-                foreach (var building in myBuildings)
+                else if (CanBuild(touchedBuilding))
                 {
-                    if (building.CanTrain(gold))
+                    firstAction = $"BUILD {touchedSite} ";
+                    if (!HasEnoughMine(myBuildings) || touchedBuilding.HasFinishToBuild())
                     {
-                        siteIdConcatened += $" {building.SiteId}";
+                        firstAction += "MINE";
+                    }
+                    else if (!HasEnoughBarracks(myBuildings))
+                    {
+                        var barrackType = "ARCHER";
+                        if (!myBuildings.Any(b => b.UnitTypeBuilt.Equals(UnitType.Giant)))
+                            barrackType = "GIANT";
+                        else if (!myBuildings.Any(b => b.UnitTypeBuilt.Equals(UnitType.Knight)))
+                            barrackType = "KNIGHT";
+
+                        firstAction +=  $"BARRACKS-{barrackType}";
+                    }
+                    else
+                    {
+                        firstAction += "TOWER";
+                    }
+                }
+                else if (theNearestEmptySitePosition != null)
+                {
+                    firstAction = $"MOVE {theNearestEmptySitePosition.X} {theNearestEmptySitePosition.Y}";
+                }
+                
+                var needArcher = !myUnits.Any(u => u.UnitType.Equals(UnitType.Archer));
+                if (!needArcher)
+                {
+                    myBuildings = myBuildings.OrderByDescending(b => 
+                        b.GetTrainPrice()).ToList();
+                
+                    foreach (var building in myBuildings.Where(building => building.CanTrain(gold)))
+                    {
+                        concatenedSiteId += $" {building.SiteId}";
                         gold -= building.GetTrainPrice();
                     }    
                 }
+                else
+                {
+                    var archerBuildings = myBuildings.Where(b => 
+                        b.UnitTypeBuilt.Equals(UnitType.Archer)).ToList();
+                
+                    foreach (var building in archerBuildings.Where(building => building.CanTrain(gold)))
+                    {
+                        concatenedSiteId += $" {building.SiteId}";
+                        gold -= building.GetTrainPrice();
+                    }  
+                }
 
                 Console.WriteLine(firstAction);
-                Console.WriteLine(secondAction + siteIdConcatened);
+                Console.WriteLine(secondAction + concatenedSiteId);
             }
         }
 
-        public static bool CanBuild(int touchedSite, List<Building> buildings)
+        private static bool HasEnoughMine(List<Building> myBuildings)
         {
-            return touchedSite != -1 && !HasBuilt(touchedSite, buildings);
+            var mines = myBuildings.Where(b => b.StructureType.Equals(StructureType.Mine)).ToList();
+            if (!mines.Any()) return false;
+            var hasMaximumProduction = true;
+            foreach (var mine in mines.Where(mine => !mine.HasMaximumProduction()))
+            {
+                hasMaximumProduction = false;
+            }
+            Console.Error.WriteLine("max : " + hasMaximumProduction);
+
+            return hasMaximumProduction;
+        }
+
+        private static bool HasEnoughTower(List<Building> myBuildings)
+        {
+            return myBuildings.Count(b => b.StructureType.Equals(StructureType.Tower)) > 2;
+        }
+
+        private static Position GetOpposedPosition(Position myQueenPosition, Position nearestEnemyUnitPosition)
+        {
+            var opposedPosition = nearestEnemyUnitPosition;
+            var distance = GetDistance(myQueenPosition, nearestEnemyUnitPosition);
+            if (myQueenPosition.X < nearestEnemyUnitPosition.X)
+                opposedPosition.X -= distance;
+            else if (myQueenPosition.X > nearestEnemyUnitPosition.X)
+            {
+                opposedPosition.X += distance;
+            }
+
+            if (myQueenPosition.Y < nearestEnemyUnitPosition.Y)
+            {
+                opposedPosition.Y -= distance;
+            }
+            else if (myQueenPosition.Y > nearestEnemyUnitPosition.Y)
+            {
+                opposedPosition.Y += distance;
+            }
+
+            return opposedPosition;
+        }
+
+        private static void LinkBuildingsAndSites(List<Building> buildings, List<Site> sites)
+        {
+            foreach (var building in buildings)
+            {
+                building.Site = sites.Find(s => s.Id.Equals(building.SiteId));
+            }
+        }
+
+        private static bool IsBeside(Position queenPosition, Position unitPosition)
+        {
+            return GetDistance(queenPosition, unitPosition) < 300;
+        }
+
+        private static bool HasEnoughBarracks(List<Building> myBuildings)
+        {
+            return myBuildings.Count(b => b.StructureType.Equals(StructureType.Barrack)) > 2;
+        }
+
+        public static bool CanBuild(Building touchedBuilding)
+        {
+            if (touchedBuilding == null) return false;
+            Console.Error.WriteLine(touchedBuilding.StructureType);
+            Console.Error.WriteLine(touchedBuilding.HasFinishToBuild());
+            return (touchedBuilding.StructureType.Equals(StructureType.Empty) || !touchedBuilding.HasFinishToBuild());
         }
 
         private static List<Site> GetEmptySites(List<Site> sites, List<Building> buildings)
         {
-            var emptyBuildings = buildings.Where(b => b.RelationshipType.Equals(RelationshipType.NoStructure))
+            var emptyBuildings = buildings.Where(b => 
+                    b.RelationshipType.Equals(RelationshipType.NoStructure))
                 .Select(b => b.SiteId).ToList();
             return sites.Where(s => emptyBuildings.Contains(s.Id)).ToList();
-        }
-
-        private static bool HasBuilt(int expectedSiteId, List<Building> buildings)
-        {
-            return buildings.Any(b =>
-                b.SiteId.Equals(expectedSiteId) && b.RelationshipType.Equals(RelationshipType.Friendly));
         }
 
         private static List<Unit> GetUnits()
@@ -119,8 +224,8 @@ namespace CodeRoyale
                 buildings.Add(new Building
                 {
                     SiteId = int.Parse(inputs[0]),
-                    Ignore1 = int.Parse(inputs[1]),
-                    Ignore2 = int.Parse(inputs[2]),
+                    RemainingGold = int.Parse(inputs[1]),
+                    MaxMineSize = int.Parse(inputs[2]),
                     StructureType = (StructureType) int.Parse(inputs[3]),
                     RelationshipType = (RelationshipType) int.Parse(inputs[4]),
                     Param1 = int.Parse(inputs[5]),
@@ -153,23 +258,38 @@ namespace CodeRoyale
             return sites;
         }
 
-        public static Site FindTheNearestSite(Position currentPosition, List<Site> sites)
+        public static Position FindTheNearestPosition(Position currentPosition, List<Position> positions)
         {
-            var nearestSite = sites.First();
-            var nearestDistance = Getdistance(currentPosition, nearestSite.Position);
-            foreach (var site in sites)
+            var nearestPosition = positions.First();
+            var nearestDistance = GetDistance(currentPosition, nearestPosition);
+            foreach (var position in positions)
             {
-                var distance = Getdistance(currentPosition, site.Position);
+                var distance = GetDistance(currentPosition, position);
 
                 if (nearestDistance <= distance) continue;
                 nearestDistance = distance;
-                nearestSite = site;
+                nearestPosition = position;
             }
 
-            return nearestSite;
+            return nearestPosition;
+        }
+        public static Site FindTheNearestSite(Position currentPosition, List<Site> sites)
+        {
+            var theNearestSite = sites.First();
+            var nearestDistance = GetDistance(currentPosition, theNearestSite.Position);
+            foreach (var site in sites)
+            {
+                var distance = GetDistance(currentPosition, site.Position);
+
+                if (nearestDistance <= distance) continue;
+                nearestDistance = distance;
+                theNearestSite = site;
+            }
+
+            return theNearestSite;
         }
 
-        private static int Getdistance(Position currentPosition, Position expectedPosition)
+        private static int GetDistance(Position currentPosition, Position expectedPosition)
         {
             return Math.Abs(currentPosition.X - expectedPosition.X) +
                    Math.Abs(currentPosition.Y - expectedPosition.Y);
@@ -206,9 +326,11 @@ namespace CodeRoyale
     {
         private const int KnightPrice = 80;
         private const int ArcherPrice = 100;
+        private const int GiantPrice = 140;
         public int SiteId { get; set; }
-        public int Ignore1 { get; set; }
-        public int Ignore2 { get; set; }
+        public Site Site { get; set; }
+        public int RemainingGold { get; set; }
+        public int MaxMineSize { get; set; }
         public StructureType StructureType { get; set; }
         public RelationshipType RelationshipType { get; set; }
         public int Param1 { get; set; }
@@ -218,15 +340,15 @@ namespace CodeRoyale
         {
             return "Building\n\t" +
                    $"Site : {SiteId}\n\t" +
-                   $"Ignore1 : {Ignore1}\n\t" +
-                   $"Ignore2 : {Ignore2}\n\t" +
+                   $"RemainingGold : {RemainingGold}\n\t" +
+                   $"MaxMineSize : {MaxMineSize}\n\t" +
                    $"StructureType : {StructureType}\n\t" +
                    $"Relationship : {RelationshipType}\n\t" +
                    $"Param1 : {Param1}\n\t" +
                    $"UnitTypeBuilt : {UnitTypeBuilt}\n\t";
         }
 
-        public bool CanTrain(int gold)
+        public bool CanTrain(in int gold)
         {
             switch (UnitTypeBuilt)
             {
@@ -234,6 +356,8 @@ namespace CodeRoyale
                     return gold >= ArcherPrice;
                 case UnitType.Knight:
                     return gold >= KnightPrice;
+                case UnitType.Giant:
+                    return gold >= GiantPrice;
                 default:
                     return false;
             }
@@ -247,8 +371,26 @@ namespace CodeRoyale
                     return ArcherPrice;
                 case UnitType.Knight:
                     return KnightPrice;
+                case UnitType.Giant:
+                    return GiantPrice;
                 default:
                     return 0;
+            }
+        }
+
+        public bool HasMaximumProduction()
+        {
+            return MaxMineSize.Equals(Param1);
+        }
+
+        public bool HasFinishToBuild()
+        {
+            switch (StructureType)
+            {
+                case StructureType.Mine:
+                    return !HasMaximumProduction();
+                default:
+                    return true;
             }
         }
     }
@@ -273,6 +415,8 @@ namespace CodeRoyale
     public enum StructureType
     {
         Empty = -1,
+        Mine = 0,
+        Tower = 1,
         Barrack = 2
     }
 
@@ -287,6 +431,7 @@ namespace CodeRoyale
     {
         Queen = -1,
         Knight = 0,
-        Archer = 1
+        Archer = 1,
+        Giant = 2
     }
 }
