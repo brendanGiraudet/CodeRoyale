@@ -78,5 +78,28 @@ namespace CodeRoyaleTests
             // Assert
             Assert.IsTrue(canTrain);
         }
+
+        [Test]
+        public void ShouldGetDistanceWithThisPosition()
+        {
+            // Arrange
+            var expectedDistance = 2;
+            var currentPosition = new Position
+            {
+                X = 1,
+                Y = 1
+            };
+            var otherPosition = new Position
+            {
+                X = 2,
+                Y = 2
+            };
+
+            // Act
+            var distance = currentPosition.GetDistanceWithThisPosition(otherPosition);
+            
+            // Assert
+            Assert.AreEqual(distance,expectedDistance);
+        }
     }
 }
