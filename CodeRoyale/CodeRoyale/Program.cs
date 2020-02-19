@@ -63,15 +63,17 @@ namespace CodeRoyal
                     continue;
                 }
 
+                Console.Error.WriteLine(touchedBuilding);
                 var mines = myBuildings.Where(b => b.StructureType.Equals(StructureType.Mine)).ToList();
-                if (!FinishToBuildAllMines(mines))
+                
+                if (!FinishToBuildAllMines(mines, touchedBuilding))
                 {
                     BuildMineInThisSite(touchedBuilding.Site);
                     TryToTrainUnits(myBuildings, gold);
                     continue;
                 }
                 
-                if (!touchedBuilding.StructureType.Equals(StructureType.Empty))
+                if (touchedBuilding.RelationshipType.Equals(RelationshipType.Friendly))
                 {
                     var theNearestEmptySite = FindTheNearestSite(myQueen.Position, emptySites);
                     MoveToThisSite(theNearestEmptySite);
@@ -178,9 +180,11 @@ namespace CodeRoyal
             Console.WriteLine($"BUILD {touchedBuildingSite.Id} MINE");
         }
 
-        private static bool FinishToBuildAllMines(List<Building> mines)
+        private static bool FinishToBuildAllMines(List<Building> mines, Building touchedBuilding)
         {
-            return mines.Any() && mines.All(mine => mine.HasMaximumProduction());
+            return (mines.Count > 1 && !touchedBuilding.StructureType.Equals(StructureType.Mine))
+                   || (touchedBuilding.StructureType.Equals(StructureType.Mine) &&
+                       touchedBuilding.HasMaximumProduction());
         }
 
         private static void NoUnitToTrain()
