@@ -36,6 +36,7 @@ namespace CodeRoyal
 
                 var myBuildings = buildings.Where(b =>
                     b.RelationshipType.Equals(RelationshipType.Friendly)).ToList();
+                var towers = myBuildings.Where(b => b.StructureType.Equals(StructureType.Tower)).ToList();
 
                 var touchedBuilding = buildings.Find(b => b.SiteId.Equals(touchedSite));
 
@@ -60,16 +61,14 @@ namespace CodeRoyal
                     var theNearestSite = FindTheNearestSite(myQueen.Position, emptySites);
                     if (theNearestSite == null)
                     {
-                        var towers = myBuildings.Where(b => b.StructureType.Equals(StructureType.Tower)).ToList();
-                        var theNearestTower = FindTheNearestBuilding(myQueen.Position, towers);
-                        theNearestSite = theNearestTower.Site;
+                        var nearestTower = FindTheNearestBuilding(myQueen.Position, towers);
+                        theNearestSite = nearestTower.Site;
                     }
                     MoveToThisSite(theNearestSite);
                     TryToTrainUnits(myBuildings, gold);
                     continue;
                 }
 
-                Console.Error.WriteLine(touchedBuilding);
                 var mines = myBuildings.Where(b => b.StructureType.Equals(StructureType.Mine)).ToList();
 
                 if (!FinishToBuildAllMines(mines, touchedBuilding))
@@ -84,9 +83,8 @@ namespace CodeRoyal
                     var theNearestSite = FindTheNearestSite(myQueen.Position, emptySites);
                     if (theNearestSite == null)
                     {
-                        var towers = myBuildings.Where(b => b.StructureType.Equals(StructureType.Tower)).ToList();
-                        var theNearestTower = FindTheNearestBuilding(myQueen.Position, towers);
-                        theNearestSite = theNearestTower.Site;
+                        var besideTower = FindTheNearestBuilding(myQueen.Position, towers);
+                        theNearestSite = besideTower.Site;
                     }
                     MoveToThisSite(theNearestSite);
                     TryToTrainUnits(myBuildings, gold);
@@ -117,15 +115,16 @@ namespace CodeRoyal
                     continue;
                 }
 
-                var towers = myBuildings.Where(b => b.StructureType.Equals(StructureType.Tower)).ToList();
                 if (!FinishToBuildAllTowers(towers))
                 {
                     BuildTowerInThisSite(touchedBuilding.Site);
                     TryToTrainUnits(myBuildings, gold);
                     continue;
                 }
+
                 var theNearestTower = FindTheNearestBuilding(myQueen.Position, towers);
                 BuildTowerInThisSite(theNearestTower.Site); // level up the tower
+                TryToTrainUnits(myBuildings, gold);
             }
         }
 
