@@ -49,38 +49,50 @@ namespace CodeRoyal
                         NoUnitToTrain();
                         continue;
                     }
-                    
+
                     var theNearestArcherBuild = FindTheNearestBuilding(myQueen.Position, archerBuildings);
                     TrainUnitsInThisBuilding(theNearestArcherBuild);
                     continue;
                 }
-                
+
                 if (touchedBuilding == null)
                 {
-                    var theNearestEmptySite = FindTheNearestSite(myQueen.Position, emptySites);
-                    MoveToThisSite(theNearestEmptySite);
+                    var theNearestSite = FindTheNearestSite(myQueen.Position, emptySites);
+                    if (theNearestSite == null)
+                    {
+                        var towers = myBuildings.Where(b => b.StructureType.Equals(StructureType.Tower)).ToList();
+                        var theNearestTower = FindTheNearestBuilding(myQueen.Position, towers);
+                        theNearestSite = theNearestTower.Site;
+                    }
+                    MoveToThisSite(theNearestSite);
                     TryToTrainUnits(myBuildings, gold);
                     continue;
                 }
 
                 Console.Error.WriteLine(touchedBuilding);
                 var mines = myBuildings.Where(b => b.StructureType.Equals(StructureType.Mine)).ToList();
-                
+
                 if (!FinishToBuildAllMines(mines, touchedBuilding))
                 {
                     BuildMineInThisSite(touchedBuilding.Site);
                     TryToTrainUnits(myBuildings, gold);
                     continue;
                 }
-                
+
                 if (touchedBuilding.RelationshipType.Equals(RelationshipType.Friendly))
                 {
-                    var theNearestEmptySite = FindTheNearestSite(myQueen.Position, emptySites);
-                    MoveToThisSite(theNearestEmptySite);
+                    var theNearestSite = FindTheNearestSite(myQueen.Position, emptySites);
+                    if (theNearestSite == null)
+                    {
+                        var towers = myBuildings.Where(b => b.StructureType.Equals(StructureType.Tower)).ToList();
+                        var theNearestTower = FindTheNearestBuilding(myQueen.Position, towers);
+                        theNearestSite = theNearestTower.Site;
+                    }
+                    MoveToThisSite(theNearestSite);
                     TryToTrainUnits(myBuildings, gold);
                     continue;
                 }
-                
+
                 var archerBarracks = myBuildings.Where(b => b.UnitTypeBuilt.Equals(UnitType.Archer)).ToList();
                 if (!FinishToBuildAllArcherBarracks(archerBarracks))
                 {
@@ -88,7 +100,7 @@ namespace CodeRoyal
                     TryToTrainUnits(myBuildings, gold);
                     continue;
                 }
-                
+
                 var knightBarracks = myBuildings.Where(b => b.UnitTypeBuilt.Equals(UnitType.Knight)).ToList();
                 if (!FinishToBuildAllKnightBarracks(knightBarracks))
                 {
@@ -96,7 +108,7 @@ namespace CodeRoyal
                     TryToTrainUnits(myBuildings, gold);
                     continue;
                 }
-                
+
                 var giantBarracks = myBuildings.Where(b => b.UnitTypeBuilt.Equals(UnitType.Giant)).ToList();
                 if (!FinishToBuildAllGiantBarracks(giantBarracks))
                 {
@@ -104,7 +116,7 @@ namespace CodeRoyal
                     TryToTrainUnits(myBuildings, gold);
                     continue;
                 }
-                
+
                 var towers = myBuildings.Where(b => b.StructureType.Equals(StructureType.Tower)).ToList();
                 if (!FinishToBuildAllTowers(towers))
                 {
@@ -112,10 +124,8 @@ namespace CodeRoyal
                     TryToTrainUnits(myBuildings, gold);
                     continue;
                 }
-                
                 var theNearestTower = FindTheNearestBuilding(myQueen.Position, towers);
                 BuildTowerInThisSite(theNearestTower.Site); // level up the tower
-                TryToTrainUnits(myBuildings, gold);
             }
         }
 
@@ -127,7 +137,7 @@ namespace CodeRoyal
             foreach (var barrack in myBarracks)
             {
                 if (!barrack.CanTrain(gold)) continue;
-                
+
                 barracksToTrain.Add(barrack);
                 gold -= barrack.GetTrainPrice();
             }
@@ -262,8 +272,8 @@ namespace CodeRoyal
                         X = int.Parse(inputs[0]),
                         Y = int.Parse(inputs[1])
                     },
-                    RelationshipType = (RelationshipType) int.Parse(inputs[2]),
-                    UnitType = (UnitType) int.Parse(inputs[3]),
+                    RelationshipType = (RelationshipType)int.Parse(inputs[2]),
+                    UnitType = (UnitType)int.Parse(inputs[3]),
                     Health = int.Parse(inputs[4])
                 });
             }
@@ -283,10 +293,10 @@ namespace CodeRoyal
                     SiteId = int.Parse(inputs[0]),
                     RemainingGold = int.Parse(inputs[1]),
                     MaxMineSize = int.Parse(inputs[2]),
-                    StructureType = (StructureType) int.Parse(inputs[3]),
-                    RelationshipType = (RelationshipType) int.Parse(inputs[4]),
+                    StructureType = (StructureType)int.Parse(inputs[3]),
+                    RelationshipType = (RelationshipType)int.Parse(inputs[4]),
                     Param1 = int.Parse(inputs[5]),
-                    UnitTypeBuilt = (UnitType) int.Parse(inputs[6])
+                    UnitTypeBuilt = (UnitType)int.Parse(inputs[6])
                 });
             }
 
