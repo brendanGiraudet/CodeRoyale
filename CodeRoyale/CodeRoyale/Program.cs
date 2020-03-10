@@ -130,6 +130,13 @@ namespace CodeRoyal
 
         private static void TryToTrainUnits(List<Building> myBarracks, int gold)
         {
+            if (gold < 200)
+            {
+                NoUnitToTrain();
+                return;
+            }
+                
+
             myBarracks = myBarracks.OrderByDescending(b =>
                 b.GetTrainPrice()).ToList();
             var barracksToTrain = new List<Building>();
@@ -166,7 +173,7 @@ namespace CodeRoyal
 
         private static bool FinishToBuildAllKnightBarracks(List<Building> knightBarracks)
         {
-            return knightBarracks.Any();
+            return knightBarracks.Count > 1;
         }
 
         private static void BuildArcherBarrackInThisSite(Site touchedBuildingSite)
@@ -176,7 +183,7 @@ namespace CodeRoyal
 
         private static bool FinishToBuildAllArcherBarracks(List<Building> archerBarracks)
         {
-            return archerBarracks.Any();
+            return true;
         }
 
         private static void MoveToThisSite(Site theNearestSite)
@@ -191,7 +198,7 @@ namespace CodeRoyal
 
         private static bool FinishToBuildAllMines(List<Building> mines, Building touchedBuilding)
         {
-            return (mines.Count > 2 && !touchedBuilding.StructureType.Equals(StructureType.Mine))
+            return (mines.Count > 3 && !touchedBuilding.StructureType.Equals(StructureType.Mine))
                    || (touchedBuilding.StructureType.Equals(StructureType.Mine) &&
                        touchedBuilding.HasMaximumProduction());
         }
