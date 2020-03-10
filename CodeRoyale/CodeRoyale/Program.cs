@@ -89,20 +89,20 @@ namespace CodeRoyal
                     MoveToThisSite(theNearestSite);
                     TryToTrainUnits(myBuildings, gold);
                     continue;
+                }                
+
+                var knightBarracks = myBuildings.Where(b => b.UnitTypeBuilt.Equals(UnitType.Knight)).ToList();
+                if (!FinishToBuildAllKnightBarracks(knightBarracks))
+                {
+                    BuildKnightBarrackInThisSite(touchedBuilding.Site);
+                    TryToTrainUnits(myBuildings, gold);
+                    continue;
                 }
 
                 var archerBarracks = myBuildings.Where(b => b.UnitTypeBuilt.Equals(UnitType.Archer)).ToList();
                 if (!FinishToBuildAllArcherBarracks(archerBarracks))
                 {
                     BuildArcherBarrackInThisSite(touchedBuilding.Site);
-                    TryToTrainUnits(myBuildings, gold);
-                    continue;
-                }
-
-                var knightBarracks = myBuildings.Where(b => b.UnitTypeBuilt.Equals(UnitType.Knight)).ToList();
-                if (!FinishToBuildAllKnightBarracks(knightBarracks))
-                {
-                    BuildKnightBarrackInThisSite(touchedBuilding.Site);
                     TryToTrainUnits(myBuildings, gold);
                     continue;
                 }
@@ -156,7 +156,7 @@ namespace CodeRoyal
 
         private static bool FinishToBuildAllGiantBarracks(List<Building> giantBarracks)
         {
-            return giantBarracks.Any();
+            return true; // giantBarracks.Any();
         }
 
         private static void BuildKnightBarrackInThisSite(Site touchedBuildingSite)
@@ -191,7 +191,7 @@ namespace CodeRoyal
 
         private static bool FinishToBuildAllMines(List<Building> mines, Building touchedBuilding)
         {
-            return (mines.Count > 1 && !touchedBuilding.StructureType.Equals(StructureType.Mine))
+            return (mines.Count > 2 && !touchedBuilding.StructureType.Equals(StructureType.Mine))
                    || (touchedBuilding.StructureType.Equals(StructureType.Mine) &&
                        touchedBuilding.HasMaximumProduction());
         }
